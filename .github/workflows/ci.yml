@@ -1,4 +1,4 @@
-name: BharatYatra CI Pipeline
+name: ExploreBharat CI Pipeline
 
 on:
   push:
@@ -10,6 +10,16 @@ jobs:
   validate-and-test:
     name: Build, Typecheck & Integration Test
     runs-on: ubuntu-latest
+
+    env:
+      NODE_ENV: test
+      PORT: 4000
+      DATABASE_URL: "file:./dev.db"
+      JWT_SECRET: "ci-test-jwt-secret-key-explorebharat-2026"
+      JWT_REFRESH_SECRET: "ci-test-refresh-jwt-secret-key-explorebharat-2026"
+      PAYMENT_PROVIDER_MODE: "demo"
+      MAPS_PROVIDER: "leaflet_osm"
+      AI_PROVIDER: "internal_engine"
 
     steps:
       - name: Checkout repository
@@ -27,27 +37,22 @@ jobs:
       - name: Build shared types
         run: npm run build --workspace=@bharatyatra/types
 
-      - name: Generate Prisma client & Push Schema
+      - name: Setup Database & Seed Test Data
         run: |
           cd packages/database
           npx prisma generate
           npx prisma db push --skip-generate
           npm run seed
+          npm run build
 
-      - name: Typecheck Backend API
-        run: |
-          cd apps/api
-          npx tsc --noEmit
+      - name: Build Backend API
+        run: npm run build --workspace=@bharatyatra/api
 
-      - name: Run Backend Integration & Security Tests
-        run: |
-          cd apps/api
-          npm test
+      - name: Run Backend Integration & Security Tests (66 Test Suites)
+        run: npm test --workspace=@bharatyatra/api
 
       - name: Build Web Application (Next.js)
-        run: |
-          cd apps/web
-          npm run build
+        run: npm run build --workspace=@bharatyatra/web
 
       - name: Typecheck Mobile Client (Expo React Native)
         run: |
