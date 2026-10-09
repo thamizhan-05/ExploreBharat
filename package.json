@@ -15,7 +15,8 @@
     "db:generate": "npm --workspace=@bharatyatra/database run generate",
     "db:push": "npm --workspace=@bharatyatra/database run push",
     "db:seed": "npm --workspace=@bharatyatra/database run seed",
-    "test": "npm --workspace=@bharatyatra/api run test"
+    "test": "npm --workspace=@bharatyatra/api run test",
+    "test:e2e": "playwright test"
   },
   "keywords": [
     "tourism",
@@ -28,5 +29,8 @@
     "prisma"
   ],
   "author": "ExploreBharat Team",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@playwright/test": "^1.64.0"
+  }
 }

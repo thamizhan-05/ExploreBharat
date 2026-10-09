@@ -51,3 +51,8 @@ web-build/
 __pycache__/
 *.pyc
 *.pyo
+
+# Testing outputs
+test-results/
+playwright-report/
+blob-report/
