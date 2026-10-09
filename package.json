@@ -1,0 +1,35 @@
+{
+  "name": "bharatyatra-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ExploreBharat — Discover India. Plan Your Journey. Complete Cross-Platform Tourism Platform",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "dev:api": "npm --workspace=@bharatyatra/api run dev",
+    "dev:web": "npm --workspace=@bharatyatra/web run dev",
+    "dev:mobile": "npm --workspace=@bharatyatra/mobile run dev",
+    "db:generate": "npm --workspace=@bharatyatra/database run generate",
+    "db:push": "npm --workspace=@bharatyatra/database run push",
+    "db:seed": "npm --workspace=@bharatyatra/database run seed",
+    "test": "npm --workspace=@bharatyatra/api run test"
+  },
+  "keywords": [
+    "tourism",
+    "india",
+    "travel",
+    "explorebharat",
+    "cross-platform",
+    "nextjs",
+    "expo",
+    "prisma"
+  ],
+  "author": "ExploreBharat Team",
+  "license": "UNLICENSED",
+  "optionalDependencies": {
+    "@next/swc-win32-x64-msvc": "^14.2.3"
+  }
+}

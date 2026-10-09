@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: bharatyatra-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: bharatyatra
+      POSTGRES_PASSWORD: bharatyatra_secure_password
+      POSTGRES_DB: bharatyatra_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bharatyatra -d bharatyatra_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: bharatyatra-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bharatyatra-api
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://bharatyatra:bharatyatra_secure_password@postgres:5432/bharatyatra_db?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: production_jwt_secret_bharat_yatra_super_key_2026
+      JWT_REFRESH_SECRET: production_jwt_refresh_bharat_yatra_key_2026
+      FRONTEND_URL: http://localhost:3000
+      DEMO_MODE: "false"
+
+volumes:
+  postgres_data:
+  redis_data:

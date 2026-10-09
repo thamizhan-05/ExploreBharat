@@ -1,0 +1,800 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                String       @id @default(uuid())
+  email             String       @unique
+  passwordHash      String
+  name              String
+  phone             String?
+  role              String       @default("USER") // USER, VENDOR, GUIDE, ATTRACTION_MANAGER, HOTEL_MANAGER, ADMIN, SUPER_ADMIN
+  avatarUrl         String?
+  preferredLanguage String       @default("en")
+  travelStyle       String?      // ADVENTURE, HERITAGE, LUXURY, BUDGET, SPIRITUAL
+  budgetPreference  String?      // LOW, MEDIUM, LUXURY
+  interests         String       @default("[]") // JSON array of string tags
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  trips             Trip[]
+  bookings          Booking[]
+  reviews           Review[]
+  favorites         Favorite[]
+  notifications     Notification[]
+  vendorProfile     Vendor?
+}
+
+model State {
+  id               String   @id @default(uuid())
+  name             String   @unique
+  code             String   @unique // e.g. RJ, KL, MH, DL
+  isUnionTerritory Boolean  @default(false)
+  capital          String
+  description      String
+  imageUrl         String?
+  createdAt        DateTime @default(now())
+
+  districts        District[]
+  cities           City[]
+}
+
+model District {
+  id          String   @id @default(uuid())
+  name        String
+  code        String?
+  stateId     String
+  state       State    @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  description String?
+  createdAt   DateTime @default(now())
+
+  cities      City[]
+
+  @@unique([name, stateId])
+  @@index([stateId])
+}
+
+model City {
+  id              String       @id @default(uuid())
+  name            String
+  stateId         String
+  state           State        @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  districtId      String?
+  district        District?    @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  description     String
+  latitude        Float
+  longitude       Float
+  imageUrl        String?
+  bestTimeToVisit String
+  weatherOverview String?
+  isPopular       Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+
+  attractions     Attraction[]
+  hotels          Hotel[]
+  restaurants     Restaurant[]
+  activities      Activity[]
+  events          Event[]
+
+  @@unique([name, stateId])
+}
+
+model AttractionCategory {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  slug        String       @unique
+  iconName    String
+  description String?
+  createdAt   DateTime     @default(now())
+
+  attractions Attraction[]
+}
+
+model Attraction {
+  id                     String             @id @default(uuid())
+  name                   String
+  slug                   String             @unique
+  cityId                 String
+  city                   City               @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  categoryId             String
+  category               AttractionCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  description            String
+  history                String?
+  heroImageUrl           String
+  galleryImages          String             @default("[]") // JSON array
+  latitude               Float
+  longitude              Float
+  bestTimeToVisit        String
+  openingTime            String             @default("09:00 AM")
+  closingTime            String             @default("05:30 PM")
+  weeklyHolidays         String             @default("[]") // JSON array e.g. ["Monday"]
+  expectedDurationHours  Float              @default(2.5)
+  accessibilityFeatures  String             @default("[]") // JSON array
+  wheelchairAccessible   Boolean            @default(false)
+  seniorFriendly         Boolean            @default(true)
+  childFriendly          Boolean            @default(true)
+  walkingDifficulty      String             @default("EASY") // EASY, MODERATE, CHALLENGING
+  hasParking             Boolean            @default(true)
+  hasWashrooms           Boolean            @default(true)
+  hasFoodCourt           Boolean            @default(true)
+  safetyTips             String             @default("[]") // JSON array
+  travelTips             String             @default("[]") // JSON array
+  howToReachAir          String?
+  howToReachRail         String?
+  howToReachRoad         String?
+  sourceType             String             @default("ASI") // ASI, GOVT_TOURISM, OFFICIAL, COMMUNITY, GOOGLE_PLACES, WIKIMEDIA_COMMONS
+  sourceName             String             @default("Archaeological Survey of India")
+  sourceUrl              String?
+  officialWebsite        String?
+  officialSource         String?
+  contactInformation     String?
+  verificationStatus     String             @default("VERIFIED_ASI") // VERIFIED_ASI, VERIFIED_OFFICIAL, COMMUNITY_SUBMITTED, UNVERIFIED, PENDING_REVIEW
+  rating                 Float              @default(4.5)
+  reviewsCount           Int                @default(0)
+  isFeatured             Boolean            @default(false)
+  isHiddenGem            Boolean            @default(false)
+  discoveryType          String             @default("POPULAR") // POPULAR, LESSER_KNOWN, HIDDEN_GEM, LOCAL_SECRET, SEASONAL, EMERGING
+
+  // Administrative Location Hierarchy
+  country                String             @default("India")
+  stateName              String?
+  stateCode              String?
+  unionTerritory         Boolean            @default(false)
+  district               String?
+  taluka                 String?
+  tehsil                 String?
+  town                   String?
+  village                String?
+  subcategory            String?
+
+  // Entry & Ticketing Architecture
+  entryType              String             @default("PAID") // FREE, PAID, CONDITIONAL, PERMIT_REQUIRED, UNKNOWN
+  entryFee               Float?
+  adultIndianFee         Float?
+  childIndianFee         Float?
+  seniorCitizenFee       Float?
+  foreignVisitorFee      Float?
+  studentFee             Float?
+  currency               String             @default("INR")
+  ticketRequired         Boolean            @default(true)
+  bookingRequired        Boolean            @default(false)
+  onlineBookingAvailable Boolean            @default(true)
+  walkInAvailable        Boolean            @default(true)
+  ticketProvider         String?            // INTERNAL, ASI, PARTNER, EXTERNAL
+  officialBookingUrl     String?
+  entryDescription       String?
+  permitInformation      String?
+  permitAuthority        String?
+  permitUrl              String?
+  requiredDocuments      String?            @default("[]") // JSON array
+  restrictions           String?            @default("[]") // JSON array
+  lastFeeVerifiedAt      DateTime?
+  feeSource              String?
+  feeVerificationStatus  String             @default("VERIFIED") // VERIFIED, PARTIALLY_VERIFIED, UNVERIFIED
+
+  qualityScore           Int                @default(85) // 0-100 internal data quality score
+  verifiedAt             DateTime?
+  lastVerifiedAt         DateTime?
+
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  images                 AttractionImage[]
+  ticketTypes            TicketType[]
+  ticketSlots            TicketSlot[]
+
+  @@index([entryType])
+  @@index([cityId])
+  @@index([categoryId])
+  @@index([ticketRequired])
+  @@index([bookingRequired])
+  @@index([rating])
+}
+
+model TicketType {
+  id                String     @id @default(uuid())
+  attractionId      String
+  attraction        Attraction @relation(fields: [attractionId], references: [id], onDelete: Cascade)
+  name              String     // General, Foreign National, VIP Fastrack, Audio Guide Combo
+  description       String
+  priceInr          Float
+  foreignerPriceInr Float      @default(500)
+  childPriceInr     Float      @default(0)
+  seniorPriceInr    Float      @default(0)
+  includesGuide     Boolean    @default(false)
+  validityHours     Int        @default(4)
+  createdAt         DateTime   @default(now())
+}
+
+model TicketSlot {
+  id           String     @id @default(uuid())
+  attractionId String
+  attraction   Attraction @relation(fields: [attractionId], references: [id], onDelete: Cascade)
+  date         String     // YYYY-MM-DD
+  timeSlot     String     // e.g. 09:00 - 12:00, 12:00 - 15:00, 15:00 - 18:00
+  capacity     Int        @default(500)
+  bookedCount  Int        @default(0)
+
+  @@unique([attractionId, date, timeSlot])
+}
+
+model Hotel {
+  id                 String   @id @default(uuid())
+  name               String
+  officialName       String?
+  slug               String?
+  cityId             String
+  city               City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  address            String
+  state              String?
+  district           String?
+  pincode            String?
+  latitude           Float
+  longitude          Float
+  tier               String   @default("HERITAGE") // BUDGET, STANDARD, HERITAGE, LUXURY, RESORT, HOMESTAY
+  hotelType          String   @default("HERITAGE") // LUXURY, HERITAGE, BOUTIQUE, RESORT, BUSINESS, BUDGET, HOMESTAY
+  rating             Float    @default(4.6)
+  starRating         Float?
+  guestRating        Float?
+  reviewsCount       Int      @default(0)
+  startingPriceInr   Float
+  heroImageUrl       String
+  galleryImages      String   @default("[]") // JSON array
+  description        String
+  amenities          String   @default("[]") // JSON array (WiFi, Pool, Spa, Restaurant, Parking)
+  cancellationPolicy String   @default("Free cancellation up to 24 hours before check-in")
+  policies           String   @default("[]") // JSON array of hotel policies
+  checkInTime        String   @default("14:00")
+  checkOutTime       String   @default("11:00")
+  phone              String?
+  email              String?
+  website            String?
+  priceType          String   @default("STARTING_FROM") // STARTING_FROM, ESTIMATED, LIVE, PRICE_ON_REQUEST
+  priceSource        String   @default("Direct Hotel Inventory")
+  priceRetrievedAt   DateTime?
+  availabilityStatus String   @default("AVAILABLE") // AVAILABLE, LIMITED, UNAVAILABLE, UNKNOWN
+  source             String?
+  sourceUrl          String?
+  sourceType         String   @default("DIRECT") // DIRECT, OFFICIAL_HOTEL, GOOGLE_PLACES, PARTNER_FEED
+  verificationStatus String   @default("VERIFIED") // VERIFIED, UNVERIFIED, PENDING_REVIEW
+  qualityScore       Int      @default(90) // 0-100 internal data quality score
+  lastVerifiedAt     DateTime?
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  images             HotelImage[]
+  rooms              Room[]
+  vendorId           String?
+  vendor             Vendor?   @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  bookings           Booking[]
+
+  @@index([vendorId])
+}
+
+model Room {
+  id                String   @id @default(uuid())
+  hotelId           String
+  hotel             Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  title             String
+  roomType          String   // DELUXE, SUITE, ROYAL_HAVELI, EXECUTIVE
+  basePriceInr      Float
+  maxGuests         Int      @default(2)
+  bedType           String   @default("King Bed")
+  includesBreakfast Boolean  @default(true)
+  amenities         String   @default("[]") // JSON array
+  images            String   @default("[]") // JSON array
+  availableCount    Int      @default(5)
+}
+
+model Activity {
+  id                 String   @id @default(uuid())
+  title              String
+  cityId             String
+  city               City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  category           String   // TREKKING, RAFTING, DESERT_SAFARI, SCUBA, HERITAGE_WALK
+  durationHours      Float    @default(3.0)
+  pricePerPersonInr  Float
+  difficulty         String?  @default("Moderate")
+  rating             Float    @default(4.7)
+  reviewsCount       Int      @default(0)
+  imageUrl           String
+  description        String
+  included           String   @default("[]") // JSON array
+  slots              String   @default("[]") // JSON array of timings e.g. ["06:30 AM", "04:30 PM"]
+  createdAt          DateTime @default(now())
+}
+
+model Restaurant {
+  id             String   @id @default(uuid())
+  name           String
+  cityId         String
+  city           City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  cuisine        String   @default("[]") // JSON array e.g. ["Rajasthani Thali", "Mughlai"]
+  priceRange     String   @default("₹₹") // ₹, ₹₹, ₹₹₹, ₹₹₹₹
+  rating         Float    @default(4.5)
+  address        String
+  mustTryDishes  String   @default("[]") // JSON array
+  imageUrl       String
+  createdAt      DateTime @default(now())
+}
+
+model TourismCircuit {
+  id              String   @id @default(uuid())
+  title           String   @unique
+  slug            String   @unique
+  subtitle        String
+  description     String
+  coverImageUrl   String
+  recommendedDays Int      @default(5)
+  estimatedCostInr Float   @default(15000)
+  destinations    String   @default("[]") // JSON array of cities
+  highlights      String   @default("[]") // JSON array
+  createdAt       DateTime @default(now())
+}
+
+model Trip {
+  id                   String            @id @default(uuid())
+  userId               String
+  user                 User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title                String
+  origin               String            @default("New Delhi")
+  originLatitude       Float?
+  originLongitude      Float?
+  destination          String
+  destinationLatitude  Float?
+  destinationLongitude Float?
+  startDate            String
+  endDate              String
+  companions           String            @default("FAMILY") // SOLO, COUPLE, FAMILY, FRIENDS
+  travellerType        String            @default("FAMILY") // SOLO, COUPLE, FAMILY, SENIOR_CITIZENS, CHILDREN
+  allocatedBudgetInr   Float             @default(25000)
+  transportPreference  String            @default("BALANCED") // CHEAPEST, FASTEST, BALANCED, TRAIN_PREFERRED, BUS_PREFERRED, FLIGHT_PREFERRED, PRIVATE_VEHICLE, PUBLIC_TRANSPORT
+  walkingPreference    String            @default("MODERATE") // MINIMAL, MODERATE, EXTENSIVE
+  maxTransfers         Int               @default(3)
+  isMultimodal         Boolean           @default(true)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  days                 TripDay[]
+  journeyLegs          JourneyLeg[]
+  transportOptions     TransportOption[]
+  tripCost             TripCost?
+  alerts               TravelAlert[]
+}
+
+model TripDay {
+  id          String          @id @default(uuid())
+  tripId      String
+  trip        Trip            @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  dayNumber   Int
+  date        String?
+  title       String?
+
+  items       ItineraryItem[]
+  journeyLegs JourneyLeg[]
+
+  @@unique([tripId, dayNumber])
+}
+
+model JourneyLeg {
+  id                         String     @id @default(uuid())
+  tripId                     String
+  trip                       Trip       @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  tripDayId                  String?
+  tripDay                    TripDay?   @relation(fields: [tripDayId], references: [id], onDelete: Cascade)
+  sequence                   Int        @default(1)
+  
+  origin                     String
+  destination                String
+  originLatitude             Float?
+  originLongitude            Float?
+  destinationLatitude        Float?
+  destinationLongitude       Float?
+  
+  transportMode              String     // WALK, BICYCLE, AUTO, TAXI, CAB, CAR, BUS, METRO, LOCAL_TRAIN, INTERCITY_TRAIN, FLIGHT, FERRY, OTHER_PUBLIC
+  provider                   String?    // e.g. "Indian Railways / IRCTC", "IndiGo", "Delhi Metro (DMRC)", "Local Auto Metered"
+  serviceName                String?    // e.g. "Vande Bharat Express", "6E-2045", "Yellow Line"
+  serviceNumber              String?    // e.g. "20977", "AI-805"
+  
+  departureDateTime          String     // formatted datetime or ISO e.g. "2026-11-15 07:15 AM"
+  arrivalDateTime            String     // formatted datetime or ISO e.g. "2026-11-15 02:40 PM"
+  scheduledDepartureDateTime String?
+  scheduledArrivalDateTime   String?
+  estimatedDepartureDateTime String?
+  estimatedArrivalDateTime   String?
+  
+  durationMinutes            Int        @default(60)
+  distanceKm                 Float      @default(0)
+  
+  fare                       Float?
+  currency                   String     @default("INR")
+  fareType                   String     @default("ESTIMATED") // LIVE, ESTIMATED, SCHEDULED, STARTING_FROM, UNKNOWN
+  fareDetails                String?
+  
+  bookingRequired            Boolean    @default(false)
+  bookingUrl                 String?
+  availabilityStatus         String     @default("UNKNOWN") // AVAILABLE, LIMITED, WAITLIST, UNAVAILABLE, UNKNOWN
+  
+  source                     String     @default("Fare Policy Engine")
+  sourceUrl                  String?
+  sourceType                 String     @default("ESTIMATED_MODEL") // OFFICIAL_OPERATOR, AUTHORIZED_API, GTFS, ESTIMATED_MODEL, DEMO_DATA
+  
+  retrievedAt                DateTime   @default(now())
+  lastUpdatedAt              DateTime   @default(now())
+  confidenceStatus           String     @default("ESTIMATED") // LIVE, VERIFIED, SCHEDULED, ESTIMATED, UNKNOWN
+  
+  isTightConnection          Boolean    @default(false)
+  connectionWarning          String?
+  bufferMinutes              Int        @default(20)
+  liveStatus                 String     @default("ON_TIME") // ON_TIME, DELAYED, CANCELLED, STATUS_UNAVAILABLE
+  delayMinutes               Int        @default(0)
+  notes                      String?
+  
+  transfers                  Transfer[]
+  createdAt                  DateTime   @default(now())
+  updatedAt                  DateTime   @updatedAt
+
+  @@index([tripId])
+  @@index([tripDayId])
+}
+
+model TransportOption {
+  id                   String    @id @default(uuid())
+  tripId               String
+  trip                 Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  optionType           String    // FASTEST, CHEAPEST, BALANCED, MOST_CONVENIENT, LEAST_TRANSFERS
+  title                String
+  description          String
+  totalDurationMinutes Int
+  totalCostInr         Float
+  totalTransfers       Int       @default(0)
+  modesSummary         String    // JSON array: ["AUTO", "INTERCITY_TRAIN", "CAB"]
+  isRecommended        Boolean   @default(false)
+  legsData             String    @default("[]") // JSON serialized JourneyLeg structures
+  createdAt            DateTime  @default(now())
+
+  @@index([tripId])
+}
+
+model TripCost {
+  id                    String    @id @default(uuid())
+  tripId                String    @unique
+  trip                  Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  intercityTransportInr Float     @default(0)
+  localTransportInr     Float     @default(0)
+  hotelInr              Float     @default(0)
+  attractionsInr        Float     @default(0)
+  activitiesInr         Float     @default(0)
+  foodEstimateInr       Float     @default(0)
+  otherKnownCostsInr    Float     @default(0)
+  totalEstimatedInr     Float     @default(0)
+  knownCostInr          Float     @default(0)
+  estimatedCostInr      Float     @default(0)
+  unknownCostCount      Int       @default(0)
+  currency              String    @default("INR")
+  breakdownNotes        String?
+  lastCalculatedAt      DateTime  @default(now())
+}
+
+model TravelAlert {
+  id          String   @id @default(uuid())
+  tripId      String
+  trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  severity    String   @default("INFO") // INFO, WARNING, CRITICAL
+  alertType   String   // DELAY, TIGHT_CONNECTION, CANCELLATION, CLOSURE, WEATHER
+  title       String
+  message     String
+  affectedLeg String?
+  actionUrl   String?
+  isDismissed Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([tripId])
+}
+
+model Transfer {
+  id                 String     @id @default(uuid())
+  journeyLegId       String
+  journeyLeg         JourneyLeg @relation(fields: [journeyLegId], references: [id], onDelete: Cascade)
+  transferLocation   String
+  durationMinutes    Int        @default(15)
+  walkDistanceMeters Float      @default(200)
+  isTight            Boolean    @default(false)
+  instructions       String?
+}
+
+model ItineraryItem {
+  id                String   @id @default(uuid())
+  tripDayId         String
+  tripDay           TripDay  @relation(fields: [tripDayId], references: [id], onDelete: Cascade)
+  timeSlot          String   @default("MORNING") // MORNING, AFTERNOON, EVENING
+  title             String
+  type              String   // ATTRACTION, HOTEL, RESTAURANT, ACTIVITY, TRANSIT
+  targetId          String?
+  placeName         String
+  durationMinutes   Int      @default(120)
+  estimatedCostInr  Float    @default(0)
+  travelTimeMinutes Int      @default(30)
+  notes             String?
+  orderIndex        Int      @default(0)
+}
+
+model Booking {
+  id                String   @id @default(uuid())
+  bookingReference  String   @unique
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookingType       String   // ATTRACTION_TICKET, HOTEL, ACTIVITY
+  status            String   @default("CONFIRMED") // PENDING, CONFIRMED, CANCELLED, COMPLETED
+  title             String
+  location          String
+  checkInDate       String
+  checkOutDate      String?
+  slotTime          String?
+  guestCount        Int      @default(1)
+  totalAmountInr    Float
+  taxAmountInr      Float    @default(0)
+  convenienceFeeInr Float    @default(0)
+  qrCodeData        String
+  paymentStatus     String   @default("SUCCESS") // INITIATED, SUCCESS, FAILED, REFUNDED
+  paymentId         String?
+  hotelId           String?
+  hotel             Hotel?   @relation(fields: [hotelId], references: [id], onDelete: SetNull)
+  vendorId          String?
+  vendor            Vendor?  @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  details           String   @default("{}") // JSON metadata
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([hotelId])
+  @@index([vendorId])
+}
+
+model Review {
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetType        String   // ATTRACTION, HOTEL, ACTIVITY, RESTAURANT
+  targetId          String
+  rating            Float
+  title             String
+  comment           String
+  photos            String   @default("[]") // JSON array
+  visitDate         String?
+  isVerifiedBooking Boolean  @default(true)
+  helpfulVotes      Int      @default(0)
+  status            String   @default("APPROVED") // PENDING, APPROVED, REJECTED
+  createdAt         DateTime @default(now())
+}
+
+model Favorite {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetType String   // ATTRACTION, HOTEL, DESTINATION, CIRCUIT
+  targetId   String
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, targetType, targetId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   @default("BOOKING") // BOOKING, REMINDER, PAYMENT, PROMO, SYSTEM
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+}
+
+model Vendor {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessName String
+  contactPhone String
+  address      String
+  gstNumber    String?
+  panNumber    String?
+  status       String   @default("VERIFIED") // PENDING, VERIFIED, SUSPENDED
+  documentUrl  String?
+  createdAt    DateTime @default(now())
+
+  hotels       Hotel[]
+  bookings     Booking[]
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  name        String
+  cityId      String?
+  city        City?    @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  category    String   @default("FESTIVAL") // FESTIVAL, CULTURAL, EXHIBITION, FAIR, RELIGIOUS
+  startDate   String   // YYYY-MM-DD
+  endDate     String   // YYYY-MM-DD
+  location    String
+  description String
+  imageUrl    String
+  ticketInfo  String?  @default("Free Entry") // e.g. "Free Entry", "Ticketed Entry ₹100"
+  officialUrl String?
+  isFeatured  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([cityId])
+  @@index([startDate])
+}
+
+model AttractionImage {
+  id                 String     @id @default(uuid())
+  attractionId       String
+  attraction         Attraction @relation(fields: [attractionId], references: [id], onDelete: Cascade)
+  sourceType         String     @default("OFFICIAL_GOVERNMENT") // OFFICIAL_GOVERNMENT, OFFICIAL_ATTRACTION, LICENSED_PROVIDER, COMMUNITY, GOOGLE_PLACES, WIKIMEDIA_COMMONS, EXPLOREBHARAT_UPLOAD, OTHER_AUTHORIZED_SOURCE
+  sourceName         String
+  sourceUrl          String?
+  imageUrl           String
+  thumbnailUrl       String?
+  mediumUrl          String?
+  largeUrl           String?
+  caption            String?
+  altText            String?
+  license            String     @default("CC_BY_SA_4_0") // CC_BY_SA_4_0, PUBLIC_DOMAIN, FAIR_USE_GOVT, PROPRIETARY_LICENSED, GOOGLE_MAPS_ATTRIBUTED
+  attribution        String
+  photographer       String?
+  isPrimary          Boolean    @default(true)
+  displayOrder       Int        @default(0)
+  width              Int?
+  height             Int?
+  fileSize           Int?
+  mimeType           String?
+  contentHash        String?    // SHA-256
+  perceptualHash     String?    // dHash / pHash
+  verificationStatus String     @default("VERIFIED") // VERIFIED, PENDING_VERIFICATION, REJECTED, FLAG_NEEDS_REVIEW
+  createdAt          DateTime   @default(now())
+  verifiedAt         DateTime?
+  lastCheckedAt      DateTime?
+
+  @@index([attractionId])
+  @@index([contentHash])
+  @@index([verificationStatus])
+}
+
+model HotelImage {
+  id                 String    @id @default(uuid())
+  hotelId            String
+  hotel              Hotel     @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  imageUrl           String
+  thumbnailUrl       String?
+  sourceType         String    @default("OFFICIAL_HOTEL") // OFFICIAL_HOTEL, PARTNER_FEED, LICENSED_PROVIDER, GOOGLE_PLACES, COMMUNITY
+  sourceName         String
+  sourceUrl          String?
+  license            String    @default("PROPRIETARY_HOTEL")
+  attribution        String
+  photographer       String?
+  isPrimary          Boolean   @default(true)
+  displayOrder       Int       @default(0)
+  width              Int?
+  height             Int?
+  mimeType           String?
+  contentHash        String?   // SHA-256
+  perceptualHash     String?   // dHash
+  verificationStatus String    @default("VERIFIED")
+  createdAt          DateTime  @default(now())
+  verifiedAt         DateTime?
+  lastCheckedAt      DateTime?
+
+  @@index([hotelId])
+  @@index([contentHash])
+}
+
+model ImageAuditLog {
+  id          String   @id @default(uuid())
+  entityType  String   // ATTRACTION, HOTEL
+  entityId    String
+  imageUrl    String
+  issueType   String   // DUPLICATE, NEAR_DUPLICATE, BROKEN, MISSING_SOURCE, MISSING_ATTRIBUTION, UNVERIFIED
+  details     String
+  status      String   @default("PENDING") // PENDING, RESOLVED, DISMISSED
+  createdAt   DateTime @default(now())
+
+  @@index([issueType])
+  @@index([status])
+}
+
+model ProviderApiUsage {
+  id               String   @id @default(uuid())
+  provider         String   // GOOGLE_PLACES, WIKIMEDIA, GOVT_API
+  endpoint         String
+  requestsCount    Int      @default(0)
+  costEstimatedInr Float    @default(0)
+  lastCalledAt     DateTime @default(now())
+
+  @@index([provider])
+}
+
+model PlaceSuggestion {
+  id                  String   @id @default(uuid())
+  userId              String?
+  name                String
+  state               String
+  district            String?
+  city                String?
+  category            String
+  description         String
+  imageUrl            String?
+  latitude            Float?
+  longitude           Float?
+  entryType           String   @default("UNKNOWN") // FREE, PAID, CONDITIONAL, PERMIT_REQUIRED, UNKNOWN
+  entryFee            Float?
+  bestTimeToVisit     String?
+  howToReach          String?
+  whyWorthVisiting    String?
+  submittedByEmail    String?
+  status              String   @default("PENDING_REVIEW") // PENDING_REVIEW, APPROVED, REJECTED
+  rejectionReason     String?
+  adminNotes          String?
+  createdAt           DateTime @default(now())
+  reviewedAt          DateTime?
+
+  @@index([status])
+}
+
+model AnalyticsEvent {
+  id          String   @id @default(uuid())
+  eventName   String   // Search, PlaceViewed, HotelViewed, WishlistAdded, TripCreated, TripUpdated, BookingStarted, BookingCompleted, ReviewSubmitted, AIPlannerUsed, TransportViewed
+  userId      String?
+  sessionId   String?
+  entityType  String?  // ATTRACTION, HOTEL, DESTINATION, TRIP, BOOKING
+  entityId    String?
+  properties  String   @default("{}") // JSON string for flexible event payload
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([eventName])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([entityType, entityId])
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorUserId String?
+  actorEmail  String?
+  action      String   // VERIFY, REJECT, EDIT, MERGE, DISABLE, RESTORE, CREATE, DELETE
+  entityType  String   // ATTRACTION, HOTEL, IMAGE, USER, BOOKING, SUGGESTION, TICKET
+  entityId    String
+  details     String?  // Summary description
+  changes     String   @default("{}") // JSON diff of before/after
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model PaymentWebhookEvent {
+  id            String   @id @default(uuid())
+  eventId       String   @unique
+  eventType     String   // payment.captured, payment.failed, refund.processed
+  paymentId     String?
+  orderId       String?
+  amount        Float?
+  status        String   @default("PROCESSED") // PROCESSED, IGNORED, FAILED
+  payload       String   @default("{}")
+  processedAt   DateTime @default(now())
+
+  @@index([eventId])
+  @@index([paymentId])
+  @@index([eventType])
+}

@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "ExploreBharat",
+    "slug": "explorebharat",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "explorebharat",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "backgroundColor": "#FF671F"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.explorebharat.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#FF671F"
+      },
+      "package": "com.explorebharat.app"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #F58220;
+  --primary-hover: #DC6E10;
+  --secondary: #132238;
+  --background: #F8FAFC;
+  --card: #FFFFFF;
+}
+
+body {
+  background-color: #F8FAFC;
+  color: #132238;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #132238;
+}
+
+.indian-pattern {
+  background-color: #F8FAFC;
+  background-image: radial-gradient(#F58220 0.6px, transparent 0.6px), radial-gradient(#132238 0.6px, #F8FAFC 0.6px);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 12px;
+  opacity: 0.98;
+}
+
+.badge-asi {
+  background: linear-gradient(135deg, #132238 0%, #1E3557 100%);
+  color: #FFFFFF;
+}
+
+.badge-featured {
+  background: linear-gradient(135deg, #F58220 0%, #DC6E10 100%);
+  color: #FFFFFF;
+}

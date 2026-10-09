@@ -1,0 +1,16 @@
+{
+  "name": "ExploreBharat — Discover India. Plan Your Journey.",
+  "short_name": "ExploreBharat",
+  "description": "ExploreBharat is an India tourism platform to discover tourist places, plan trips, find hotels, explore experiences, and book travel services.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAF8F5",
+  "theme_color": "#FF671F",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

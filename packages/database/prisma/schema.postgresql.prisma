@@ -1,0 +1,442 @@
+// ==========================================
+// BharatYatra - PostgreSQL Production Schema
+// Target: Neon / Supabase / AWS RDS / Docker
+// ==========================================
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  USER
+  VENDOR
+  GUIDE
+  ATTRACTION_MANAGER
+  HOTEL_MANAGER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum VerificationStatus {
+  VERIFIED_OFFICIAL
+  VERIFIED_ASI
+  VERIFIED_TOURISM_DEPT
+  COMMUNITY_SUBMITTED
+  PENDING
+}
+
+enum HotelTier {
+  BUDGET
+  STANDARD
+  HERITAGE
+  LUXURY
+  RESORT
+  HOMESTAY
+}
+
+enum BookingType {
+  ATTRACTION_TICKET
+  HOTEL
+  ACTIVITY
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum PaymentStatus {
+  INITIATED
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+model User {
+  id                String       @id @default(uuid())
+  email             String       @unique
+  passwordHash      String
+  name              String
+  phone             String?
+  role              Role         @default(USER)
+  avatarUrl         String?
+  preferredLanguage String       @default("en")
+  travelStyle       String?
+  budgetPreference  String?
+  interests         String[]     @default([])
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  trips             Trip[]
+  bookings          Booking[]
+  reviews           Review[]
+  favorites         Favorite[]
+  notifications     Notification[]
+  vendorProfile     Vendor?
+}
+
+model State {
+  id               String   @id @default(uuid())
+  name             String   @unique
+  code             String   @unique
+  isUnionTerritory Boolean  @default(false)
+  capital          String
+  description      String
+  imageUrl         String?
+  createdAt        DateTime @default(now())
+
+  cities           City[]
+}
+
+model City {
+  id              String       @id @default(uuid())
+  name            String
+  stateId         String
+  state           State        @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  description     String
+  latitude        Float
+  longitude       Float
+  imageUrl        String?
+  bestTimeToVisit String
+  weatherOverview String?
+  isPopular       Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+
+  attractions     Attraction[]
+  hotels          Hotel[]
+  restaurants     Restaurant[]
+  activities      Activity[]
+
+  @@unique([name, stateId])
+}
+
+model AttractionCategory {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  slug        String       @unique
+  iconName    String
+  description String?
+  createdAt   DateTime     @default(now())
+
+  attractions Attraction[]
+}
+
+model Attraction {
+  id                     String             @id @default(uuid())
+  name                   String
+  slug                   String             @unique
+  cityId                 String
+  city                   City               @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  categoryId             String
+  category               AttractionCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  description            String
+  history                String?
+  heroImageUrl           String
+  galleryImages          String[]           @default([])
+  latitude               Float
+  longitude              Float
+  bestTimeToVisit        String
+  openingTime            String             @default("09:00 AM")
+  closingTime            String             @default("05:30 PM")
+  weeklyHolidays         String[]           @default([])
+  expectedDurationHours  Float              @default(2.5)
+  accessibilityFeatures  String[]           @default([])
+  hasParking             Boolean            @default(true)
+  hasWashrooms           Boolean            @default(true)
+  hasFoodCourt           Boolean            @default(true)
+  safetyTips             String[]           @default([])
+  travelTips             String[]           @default([])
+  howToReachAir          String?
+  howToReachRail         String?
+  howToReachRoad         String?
+  sourceType             String             @default("ASI")
+  sourceName             String             @default("Archaeological Survey of India")
+  sourceUrl              String?
+  verificationStatus     VerificationStatus @default(VERIFIED_ASI)
+  rating                 Float              @default(4.5)
+  reviewsCount           Int                @default(0)
+  isFeatured             Boolean            @default(false)
+  isHiddenGem            Boolean            @default(false)
+
+  // Entry & Ticketing Architecture
+  entryType              String             @default("PAID") // FREE, PAID, CONDITIONAL, PERMIT_REQUIRED, UNKNOWN
+  entryFee               Float?
+  adultIndianFee         Float?
+  childIndianFee         Float?
+  seniorCitizenFee       Float?
+  foreignVisitorFee      Float?
+  studentFee             Float?
+  currency               String             @default("INR")
+  ticketRequired         Boolean            @default(true)
+  bookingRequired        Boolean            @default(false)
+  onlineBookingAvailable Boolean            @default(true)
+  walkInAvailable        Boolean            @default(true)
+  ticketProvider         String?            // INTERNAL, ASI, PARTNER, EXTERNAL
+  officialBookingUrl     String?
+  entryDescription       String?
+  permitInformation      String?
+  permitAuthority        String?
+  permitUrl              String?
+  requiredDocuments      String[]           @default([])
+  restrictions           String[]           @default([])
+  lastFeeVerifiedAt      DateTime?
+  feeSource              String?
+  feeVerificationStatus  String             @default("VERIFIED") // VERIFIED, PARTIALLY_VERIFIED, UNVERIFIED
+
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  ticketTypes            TicketType[]
+  ticketSlots            TicketSlot[]
+
+  @@index([entryType])
+  @@index([cityId])
+  @@index([categoryId])
+  @@index([ticketRequired])
+  @@index([bookingRequired])
+  @@index([rating])
+}
+
+model TicketType {
+  id                String     @id @default(uuid())
+  attractionId      String
+  attraction        Attraction @relation(fields: [attractionId], references: [id], onDelete: Cascade)
+  name              String
+  description       String
+  priceInr          Float
+  foreignerPriceInr Float      @default(500)
+  childPriceInr     Float      @default(0)
+  seniorPriceInr    Float      @default(0)
+  includesGuide     Boolean    @default(false)
+  validityHours     Int        @default(4)
+  createdAt         DateTime   @default(now())
+}
+
+model TicketSlot {
+  id           String     @id @default(uuid())
+  attractionId String
+  attraction   Attraction @relation(fields: [attractionId], references: [id], onDelete: Cascade)
+  date         String
+  timeSlot     String
+  capacity     Int        @default(500)
+  bookedCount  Int        @default(0)
+
+  @@unique([attractionId, date, timeSlot])
+}
+
+model Hotel {
+  id                 String    @id @default(uuid())
+  name               String
+  cityId             String
+  city               City      @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  address            String
+  latitude           Float
+  longitude          Float
+  tier               HotelTier @default(HERITAGE)
+  rating             Float     @default(4.6)
+  reviewsCount       Int       @default(0)
+  startingPriceInr   Float
+  heroImageUrl       String
+  galleryImages      String[]  @default([])
+  description        String
+  amenities          String[]  @default([])
+  cancellationPolicy String    @default("Free cancellation up to 24 hours before check-in")
+  checkInTime        String    @default("14:00")
+  checkOutTime       String    @default("11:00")
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  rooms              Room[]
+}
+
+model Room {
+  id                String   @id @default(uuid())
+  hotelId           String
+  hotel             Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  title             String
+  roomType          String
+  basePriceInr      Float
+  maxGuests         Int      @default(2)
+  bedType           String   @default("King Bed")
+  includesBreakfast Boolean  @default(true)
+  amenities         String[] @default([])
+  images            String[] @default([])
+  availableCount    Int      @default(5)
+}
+
+model Activity {
+  id                 String   @id @default(uuid())
+  title              String
+  cityId             String
+  city               City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  category           String
+  durationHours      Float    @default(3.0)
+  pricePerPersonInr  Float
+  difficulty         String?  @default("Moderate")
+  rating             Float    @default(4.7)
+  reviewsCount       Int      @default(0)
+  imageUrl           String
+  description        String
+  included           String[] @default([])
+  slots              String[] @default([])
+  createdAt          DateTime @default(now())
+}
+
+model Restaurant {
+  id             String   @id @default(uuid())
+  name           String
+  cityId         String
+  city           City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  cuisine        String[] @default([])
+  priceRange     String   @default("₹₹")
+  rating         Float    @default(4.5)
+  address        String
+  mustTryDishes  String[] @default([])
+  imageUrl       String
+  createdAt      DateTime @default(now())
+}
+
+model TourismCircuit {
+  id              String   @id @default(uuid())
+  title           String   @unique
+  slug            String   @unique
+  subtitle        String
+  description     String
+  coverImageUrl   String
+  recommendedDays Int      @default(5)
+  estimatedCostInr Float   @default(15000)
+  destinations    String[] @default([])
+  highlights      String[] @default([])
+  createdAt       DateTime @default(now())
+}
+
+model Trip {
+  id                  String     @id @default(uuid())
+  userId              String
+  user                User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title               String
+  destination         String
+  startDate           String
+  endDate             String
+  companions          String     @default("FAMILY")
+  allocatedBudgetInr  Float      @default(25000)
+  transportPreference String     @default("FLIGHT_AND_CAB")
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  days                TripDay[]
+}
+
+model TripDay {
+  id        String          @id @default(uuid())
+  tripId    String
+  trip      Trip            @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  dayNumber Int
+  date      String?
+  title     String?
+
+  items     ItineraryItem[]
+
+  @@unique([tripId, dayNumber])
+}
+
+model ItineraryItem {
+  id                String   @id @default(uuid())
+  tripDayId         String
+  tripDay           TripDay  @relation(fields: [tripDayId], references: [id], onDelete: Cascade)
+  timeSlot          String   @default("MORNING")
+  title             String
+  type              String
+  targetId          String?
+  placeName         String
+  durationMinutes   Int      @default(120)
+  estimatedCostInr  Float    @default(0)
+  travelTimeMinutes Int      @default(30)
+  notes             String?
+  orderIndex        Int      @default(0)
+}
+
+model Booking {
+  id                String        @id @default(uuid())
+  bookingReference  String        @unique
+  userId            String
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookingType       BookingType
+  status            BookingStatus @default(CONFIRMED)
+  title             String
+  location          String
+  checkInDate       String
+  checkOutDate      String?
+  slotTime          String?
+  guestCount        Int           @default(1)
+  totalAmountInr    Float
+  taxAmountInr      Float         @default(0)
+  convenienceFeeInr Float         @default(0)
+  qrCodeData        String
+  paymentStatus     PaymentStatus @default(SUCCESS)
+  paymentId         String?
+  details           Json          @default("{}")
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+}
+
+model Review {
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetType        String
+  targetId          String
+  rating            Float
+  title             String
+  comment           String
+  photos            String[] @default([])
+  visitDate         String?
+  isVerifiedBooking Boolean  @default(true)
+  helpfulVotes      Int      @default(0)
+  status            String   @default("APPROVED")
+  createdAt         DateTime @default(now())
+}
+
+model Favorite {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetType String
+  targetId   String
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, targetType, targetId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   @default("BOOKING")
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+}
+
+model Vendor {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessName String
+  contactPhone String
+  address      String
+  gstNumber    String?
+  panNumber    String?
+  status       String   @default("VERIFIED")
+  documentUrl  String?
+  createdAt    DateTime @default(now())
+}
