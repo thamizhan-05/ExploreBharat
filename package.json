@@ -28,8 +28,5 @@
     "prisma"
   ],
   "author": "ExploreBharat Team",
-  "license": "UNLICENSED",
-  "optionalDependencies": {
-    "@next/swc-win32-x64-msvc": "^14.2.3"
-  }
+  "license": "UNLICENSED"
 }
