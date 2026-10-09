@@ -94,9 +94,9 @@ export default function MobileBookingsScreen() {
               </View>
 
               <View style={styles.modalDetails}>
-                <Text style={styles.detailText}><strong>Date:</strong> {selectedTicket?.checkInDate}</Text>
-                <Text style={styles.detailText}><strong>Slot:</strong> {selectedTicket?.slotTime || 'Full Day Access'}</Text>
-                <Text style={styles.detailText}><strong>Guests:</strong> {selectedTicket?.guestCount} Admission(s)</Text>
+                <Text style={styles.detailText}>Date: {selectedTicket?.checkInDate}</Text>
+                <Text style={styles.detailText}>Slot: {selectedTicket?.slotTime || 'Full Day Access'}</Text>
+                <Text style={styles.detailText}>Guests: {selectedTicket?.guestCount} Admission(s)</Text>
               </View>
 
               <TouchableOpacity
