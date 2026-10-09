@@ -51,7 +51,7 @@ router.get('/pnr/:pnr', async (req: Request, res: Response, next: NextFunction) 
     const data = await transportService.lookupPnr(req.params.pnr);
     res.json({ success: true, data });
   } catch (err: any) {
-    res.status(400).json({ success: false, message: err.message });
+    next(err);
   }
 });
 

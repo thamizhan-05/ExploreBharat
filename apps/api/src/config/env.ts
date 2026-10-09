@@ -9,7 +9,7 @@ export const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   JWT_SECRET: process.env.JWT_SECRET || 'explore-bharat-ultra-secure-jwt-secret-key-2026',
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'explore-bharat-refresh-secret-token-key-2026',
-  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
+  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '1h',
   RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID || 'rzp_test_ExploreBharatKey123',
   RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || 'rzp_test_ExploreBharatSecretKey456',
   RAZORPAY_WEBHOOK_SECRET: process.env.RAZORPAY_WEBHOOK_SECRET || 'rzp_webhook_secret_explorebharat_2026',

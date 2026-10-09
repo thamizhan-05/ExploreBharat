@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { analyticsService } from './analytics.service';
+import { authenticate, requireRoles } from '../../middleware/auth.middleware';
 
 export const analyticsRouter = Router();
 
@@ -32,8 +33,8 @@ analyticsRouter.post('/track', async (req: Request, res: Response, next: NextFun
   }
 });
 
-// GET /api/analytics/dashboard
-analyticsRouter.get('/dashboard', async (_req: Request, res: Response, next: NextFunction) => {
+// GET /api/analytics/dashboard (ADMIN only)
+analyticsRouter.get('/dashboard', authenticate, requireRoles('ADMIN', 'SUPER_ADMIN'), async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const data = await analyticsService.getDashboardAnalytics();
     res.json({ success: true, data });
@@ -42,8 +43,8 @@ analyticsRouter.get('/dashboard', async (_req: Request, res: Response, next: Nex
   }
 });
 
-// GET /api/analytics/funnel
-analyticsRouter.get('/funnel', async (_req: Request, res: Response, next: NextFunction) => {
+// GET /api/analytics/funnel (ADMIN only)
+analyticsRouter.get('/funnel', authenticate, requireRoles('ADMIN', 'SUPER_ADMIN'), async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const data = await analyticsService.getFunnelMetrics();
     res.json({ success: true, data });
@@ -52,8 +53,8 @@ analyticsRouter.get('/funnel', async (_req: Request, res: Response, next: NextFu
   }
 });
 
-// GET /api/analytics/top-trends
-analyticsRouter.get('/top-trends', async (_req: Request, res: Response, next: NextFunction) => {
+// GET /api/analytics/top-trends (ADMIN only)
+analyticsRouter.get('/top-trends', authenticate, requireRoles('ADMIN', 'SUPER_ADMIN'), async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const data = await analyticsService.getTopTrends();
     res.json({ success: true, data });

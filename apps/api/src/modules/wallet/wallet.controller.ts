@@ -18,8 +18,8 @@ router.get('/passes/:reference', authenticate, async (req: AuthenticatedRequest,
   try {
     const data = await walletService.getPassByReference(req.user!.userId, req.params.reference);
     res.json({ success: true, data });
-  } catch (err: any) {
-    res.status(404).json({ success: false, message: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 

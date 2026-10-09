@@ -908,14 +908,18 @@ async function runTests() {
 
     // 48. Startup Analytics Dashboard & 8-Stage Funnel (/api/analytics/dashboard & /api/analytics/funnel)
     await test('Startup Analytics Dashboard & 8-Stage Funnel (/api/analytics/dashboard & /api/analytics/funnel)', async () => {
-      const dashRes = await fetch(`${baseUrl}/api/analytics/dashboard`);
+      const dashRes = await fetch(`${baseUrl}/api/analytics/dashboard`, {
+        headers: { Authorization: `Bearer ${adminToken}` }
+      });
       if (dashRes.status !== 200) throw new Error(`Dashboard status ${dashRes.status}`);
       const dashJson = await dashRes.json();
       if (!dashJson.success || !dashJson.data.overview.dau || dashJson.data.financials.currency !== 'INR') {
         throw new Error('Invalid dashboard analytics structure');
       }
 
-      const funRes = await fetch(`${baseUrl}/api/analytics/funnel`);
+      const funRes = await fetch(`${baseUrl}/api/analytics/funnel`, {
+        headers: { Authorization: `Bearer ${adminToken}` }
+      });
       if (funRes.status !== 200) throw new Error(`Funnel status ${funRes.status}`);
       const funJson = await funRes.json();
       if (!funJson.success || !Array.isArray(funJson.data.stages) || funJson.data.stages.length !== 8) {

@@ -1,4 +1,5 @@
 import { prisma, parseJsonArray } from '@bharatyatra/database';
+import { AppError } from '../../middleware/error.middleware';
 
 export class WalletService {
   async getUserWallet(userId: string) {
@@ -77,7 +78,7 @@ export class WalletService {
     });
 
     if (!booking) {
-      throw new Error('Travel pass not found or access unauthorized.');
+      throw new AppError('Travel pass not found or access unauthorized.', 404);
     }
 
     let details: any = {};

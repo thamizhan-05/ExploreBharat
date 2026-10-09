@@ -2,6 +2,7 @@ import { AUTHENTIC_TRAIN_SCHEDULES, AuthenticTrainService } from '../../services
 import { AUTHENTIC_FLIGHT_SCHEDULES, AuthenticFlightService } from '../../services/providers/flight.provider';
 import { AUTHENTIC_BUS_SCHEDULES, AuthenticBusService } from '../../services/providers/bus.provider';
 import { TaxiFareProvider } from '../../services/providers/taxi-fare.provider';
+import { AppError } from '../../middleware/error.middleware';
 
 export class TransportService {
   private taxiFareProvider = new TaxiFareProvider();
@@ -127,7 +128,7 @@ export class TransportService {
   async lookupPnr(pnr: string) {
     const cleaned = pnr.trim();
     if (!/^\d{10}$/.test(cleaned)) {
-      throw new Error('Invalid PNR format. Indian Railways PNR must be exactly 10 numeric digits.');
+      throw new AppError('Invalid PNR format. Indian Railways PNR must be exactly 10 numeric digits.', 400);
     }
 
     return {

@@ -29,9 +29,17 @@ import { analyticsRouter } from './modules/analytics/analytics.controller';
 
 const app = express();
 
+app.set('trust proxy', 1);
+app.disable('x-powered-by');
+
 // Security and utility middlewares
 app.use(helmet({
-  crossOriginResourcePolicy: false
+  crossOriginResourcePolicy: false,
+  hsts: {
+    maxAge: 63072000,
+    includeSubDomains: true,
+    preload: true
+  }
 }));
 app.use(cors({
   origin: '*',
@@ -108,6 +116,17 @@ app.use('*', (req, res) => {
 app.use(errorHandler);
 
 if (process.env.NODE_ENV !== 'test') {
+  process.on('unhandledRejection', (reason: any) => {
+    console.error('Unhandled Rejection detected:', reason);
+  });
+
+  process.on('uncaughtException', (err: Error) => {
+    console.error('Uncaught Exception thrown:', err);
+    if (process.env.NODE_ENV === 'production') {
+      process.exit(1);
+    }
+  });
+
   app.listen(env.PORT, () => {
     console.log(`🚀 ExploreBharat API Gateway running at http://localhost:${env.PORT}`);
     console.log(`📍 Health Check: http://localhost:${env.PORT}/health`);
