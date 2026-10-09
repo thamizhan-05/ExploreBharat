@@ -1,0 +1,58 @@
+services:
+  # 1. Express API Gateway
+  - type: web
+    name: explorebharat-api
+    runtime: node
+    plan: starter
+    region: singapore
+    buildCommand: npm ci && npm run build --workspace=@bharatyatra/types && cd packages/database && npx prisma generate --schema=prisma/schema.postgresql.prisma && cd ../.. && npm run build --workspace=@bharatyatra/api
+    startCommand: sh apps/api/docker-entrypoint.sh
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: explorebharat-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 1h
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: SEED_ON_STARTUP
+        value: "true"
+      - key: DEMO_MODE
+        value: "false"
+
+  # 2. Next.js 14 Web Frontend
+  - type: web
+    name: explorebharat-web
+    runtime: node
+    plan: starter
+    region: singapore
+    buildCommand: npm ci && npm run build --workspace=@bharatyatra/types && npm run build --workspace=@bharatyatra/web
+    startCommand: npm --workspace=@bharatyatra/web run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: explorebharat-api
+          envVarKey: RENDER_EXTERNAL_URL
+
+databases:
+  # Managed PostgreSQL Instance
+  - name: explorebharat-db
+    databaseName: explorebharat
+    user: explorebharat
+    plan: starter
+    region: singapore

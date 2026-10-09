@@ -1,0 +1,40 @@
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy root configuration and workspace package definitions
+COPY package*.json ./
+COPY packages/types/package*.json ./packages/types/
+COPY apps/web/package*.json ./apps/web/
+
+RUN npm ci
+
+# Copy source files
+COPY packages/types ./packages/types
+COPY apps/web ./apps/web
+
+# Build types and Next.js web application
+RUN npm run build --workspace=@bharatyatra/types
+RUN npm run build --workspace=@bharatyatra/web
+
+# Production Runner Stage
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=3000
+
+RUN apk add --no-cache wget
+
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages/types/dist ./packages/types/dist
+COPY --from=builder /app/packages/types/package.json ./packages/types/package.json
+COPY --from=builder /app/apps/web ./apps/web
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/offline || exit 1
+
+CMD ["npm", "--workspace=@bharatyatra/web", "run", "start"]
