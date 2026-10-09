@@ -949,7 +949,7 @@ async function runTests() {
 
     // 51. Admin Operations Audit Trail (/api/admin/audit-logs)
     await test('Admin Operations Audit Trail (/api/admin/audit-logs)', async () => {
-      const res = await fetch(`${baseUrl}/api/admin/audit-logs`, {
+      const res = await fetch(`${baseUrl}/api/admin/audit-logs?limit=100`, {
         headers: {
           Authorization: `Bearer ${adminToken}`
         }

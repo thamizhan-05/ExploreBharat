@@ -54,6 +54,22 @@ export default function TripsPage() {
 
   useEffect(() => {
     async function loadTrips() {
+      // 1. Load from offline cache first
+      if (typeof window !== 'undefined') {
+        const cached = localStorage.getItem('explorebharat_cached_trips');
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setTrips(parsed);
+              setSelectedTrip(parsed[0]);
+            }
+          } catch (e) {
+            console.warn('Failed parsing cached trips:', e);
+          }
+        }
+      }
+
       const token = getAuthToken();
       if (!token) {
         setLoading(false);
@@ -61,12 +77,16 @@ export default function TripsPage() {
       }
       try {
         const res = await api.getMyTrips();
-        setTrips(res.data || []);
-        if (res.data?.length > 0) {
-          setSelectedTrip(res.data[0]);
+        const tripList = res.data || [];
+        setTrips(tripList);
+        if (tripList.length > 0) {
+          setSelectedTrip(tripList[0]);
+        }
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('explorebharat_cached_trips', JSON.stringify(tripList));
         }
       } catch (err) {
-        console.error(err);
+        console.error('Trip fetch fallback to cached trips:', err);
       } finally {
         setLoading(false);
       }

@@ -137,12 +137,48 @@ export default function WalletPage() {
   const [searchRef, setSearchRef] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
-    loadPasses();
+    if (typeof window !== 'undefined') {
+      setIsOffline(!navigator.onLine);
+      const handleOffline = () => setIsOffline(true);
+      const handleOnline = () => {
+        setIsOffline(false);
+        loadPasses();
+      };
+      window.addEventListener('offline', handleOffline);
+      window.addEventListener('online', handleOnline);
+
+      loadPasses();
+
+      return () => {
+        window.removeEventListener('offline', handleOffline);
+        window.removeEventListener('online', handleOnline);
+      };
+    } else {
+      loadPasses();
+    }
   }, []);
 
   const loadPasses = async () => {
+    // 1. Read from offline cache first for instant display
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('explorebharat_cached_passes');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setPasses(parsed);
+            setSelectedPass(parsed[0]);
+          }
+        }
+      } catch (e) {
+        console.warn('Failed parsing cached passes:', e);
+      }
+    }
+
+    // 2. Fetch fresh passes if online
     try {
       setError(null);
       const res = await api.getWalletPasses();
@@ -150,9 +186,12 @@ export default function WalletPage() {
       if (loaded.length > 0) {
         setPasses(loaded);
         setSelectedPass(loaded[0]);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('explorebharat_cached_passes', JSON.stringify(loaded));
+        }
       }
     } catch (err: any) {
-      console.warn('Wallet fetch fallback to default demo passes:', err.message);
+      console.warn('Wallet fetch fallback to cached/default demo passes:', err.message);
     }
   };
 
@@ -175,6 +214,11 @@ export default function WalletPage() {
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/20 text-amber-300 text-xs font-semibold rounded-full border border-amber-400/30 mb-3">
                 <Wallet className="w-3.5 h-3.5" />
                 <span>Unified Digital Travel Wallet</span>
+                {isOffline && (
+                  <span className="ml-1.5 px-2 py-0.5 bg-amber-600/80 text-white rounded text-[10px] font-bold">
+                    Offline Cache Active
+                  </span>
+                )}
               </div>
               <h1 className="text-3xl sm:text-4xl font-serif font-bold text-amber-50">
                 My Travel Wallet & Digital Passes
